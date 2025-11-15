@@ -1,0 +1,26 @@
+{
+  "idf.openOcdConfigs": [
+    "board/esp32p4-builtin.cfg"
+  ],
+  "idf.espIdfPathWin": "d:\\esp-idf\\esp-idf_v5.4\\v5.4\\esp-idf",
+  "idf.toolsPathWin": "d:\\esp-idf\\esp-idf_v5.4\\esp-tools",
+  "idf.pythonInstallPath": "d:\\esp-idf\\esp-idf_v5.4\\esp-tools\\tools\\idf-python\\3.11.2\\python.exe",
+  "idf.customExtraVars": {
+    "OPENOCD_SCRIPTS": "d:\\espressif\\tools\\openocd-esp32\\v0.11.0-esp32-20221026/openocd-esp32/share/openocd/scripts",
+    "IDF_CCACHE_ENABLE": "1",
+    "ESP_ROM_ELF_DIR": "d:\\espressif\\tools\\esp-rom-elfs\\20220823/",
+    "IDF_TARGET": "esp32p4"
+},
+  "clangd.path": "d:\\esp-idf\\esp-idf_v5.4\\esp-tools\\tools\\esp-clang\\esp-18.1.2_20240912\\esp-clang\\bin\\clangd.exe",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=d:\\esp-idf\\esp-idf_v5.4\\esp-tools\\tools\\riscv32-esp-elf\\esp-14.2.0_20241119\\riscv32-esp-elf\\bin\\riscv32-esp-elf-gcc.exe",
+    "--compile-commands-dir=d:\\桌面\\JC1060P470C_I_W\\JC1060P470C_I_W\\1-Demo\\Demo_IDF\\examples\\usb_extend_screen\\build"
+],
+"idf.portWin": "COM7",
+"idf.flashType": "UART",
+"files.associations": {
+    "uac_config.h": "c",
+    "usb_device_uac.h": "c"
+}
+}
