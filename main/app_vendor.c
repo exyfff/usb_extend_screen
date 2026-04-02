@@ -41,15 +41,13 @@ typedef struct {
 
 void transfer_task(void *pvParameter)
 {
-    frame_allocate(10, JPEG_BUFFER_SIZE);  // 增加到10个缓冲区以减少丢帧
+    frame_allocate(10, JPEG_BUFFER_SIZE);  // 10个缓冲区减少丢帧
     frame_t *usr_frame = NULL;
     while (1) {
-        usr_frame = frame_get_filled();
-        app_lcd_draw(usr_frame->data,  usr_frame->info.total, usr_frame->info.width, usr_frame->info.height);
+        usr_frame = frame_get_filled();  // 阻塞等待，无需额外delay
+        app_lcd_draw(usr_frame->data, usr_frame->info.total, usr_frame->info.width, usr_frame->info.height);
         frame_return_empty(usr_frame);
-        
-        // 让出CPU时间给音频任务
-        vTaskDelay(pdMS_TO_TICKS(1));
+        // 移除vTaskDelay：frame_get_filled已阻塞等待，任务优先级已调整无需主动让出
     }
 }
 
@@ -114,15 +112,18 @@ void tud_vendor_rx_cb(uint8_t itf)
                         break;
                     }
 
+                    // FPS统计：每200帧输出一次，减少串口负载
+#if CONFIG_EXAMPLE_ENABLE_PRINT_FPS_RATE_VALUE
                     static int fps_count = 0;
                     static int64_t start_time = 0;
                     fps_count++;
-                    if (fps_count == 50) {
+                    if (fps_count == 200) {
                         int64_t end_time = esp_timer_get_time();
-                        ESP_LOGI(TAG, "Input fps: %f", 1000000.0 / ((end_time - start_time) / 50.0));
+                        ESP_LOGI(TAG, "Input fps: %.1f", 1000000.0 / ((end_time - start_time) / 200.0));
                         start_time = end_time;
                         fps_count = 0;
                     }
+#endif
 
                     current_frame = frame_get_empty();
                     if (current_frame) {
