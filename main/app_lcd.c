@@ -34,9 +34,6 @@ static const char *TAG = "app_lcd";
 static esp_lcd_panel_handle_t display_handle;
 static jpeg_decoder_handle_t jpgd_handle = NULL;
 
-/** @brief JPEG 解码输出缓冲区，由驱动 API 提供对齐保障。 */
-static uint8_t *decode_buffer = NULL;
-static size_t decode_buffer_len = 0;
 
 static jpeg_decode_cfg_t decode_cfg = {
 #ifdef CONFIG_LCD_PIXEL_FORMAT_RGB888
@@ -53,42 +50,44 @@ static uint8_t buf_index = 0;
 
 void app_lcd_draw(uint8_t *buf, uint32_t len, uint16_t width, uint16_t height)
 {
+    // FPS统计：每200帧输出一次
+#if CONFIG_EXAMPLE_ENABLE_PRINT_FPS_RATE_VALUE
     static int fps_count = 0;
     static int64_t start_time = 0;
     fps_count++;
-    if (fps_count == 50) {
+    if (fps_count == 200) {
         int64_t end_time = esp_timer_get_time();
-        ESP_LOGI(TAG, "fps: %f", 1000000.0 / ((end_time - start_time) / 50.0));
+        ESP_LOGI(TAG, "LCD fps: %.1f", 1000000.0 / ((end_time - start_time) / 200.0));
         start_time = end_time;
         fps_count = 0;
     }
+#endif
 
-    if (decode_buffer == NULL || decode_buffer_len < EXAMPLE_LCD_DECODE_BUF_LEN) {
-        ESP_LOGE(TAG, "Decode buffer is not initialized or size is insufficient");
-        return;
-    }
+    // 性能计时
+    static uint32_t perf_count = 0;
+    static int64_t total_decode_us = 0, total_draw_us = 0;
+    int64_t t0 = esp_timer_get_time();
 
-    esp_err_t ret = jpeg_decoder_process(
-        jpgd_handle,
-        &decode_cfg,
-        buf,
-        len,
-        decode_buffer,
-        decode_buffer_len,
-        &out_size
-    );
+    // RGB565: 直接解码到 LCD 缓冲区，无需 memcpy
+    esp_err_t ret = jpeg_decoder_process(jpgd_handle, &decode_cfg, buf, len, 
+                                          lcd_buffer[buf_index], EXAMPLE_LCD_BUF_LEN, &out_size);
+    int64_t t1 = esp_timer_get_time();
+    
     if (ret != ESP_OK) {
         return;
     }
 
-    if (out_size < EXAMPLE_LCD_BUF_LEN) {
-        ESP_LOGW(TAG, "Unexpected JPEG output size: %lu", out_size);
-        return;
-    }
-
-    memcpy(lcd_buffer[buf_index], decode_buffer, EXAMPLE_LCD_BUF_LEN);
-
     esp_lcd_panel_draw_bitmap(display_handle, 0, 0, EXAMPLE_LCD_H_RES, EXAMPLE_LCD_V_RES, lcd_buffer[buf_index]);
+    int64_t t2 = esp_timer_get_time();
+    
+    // 统计并每 50 帧打印
+    total_decode_us += (t1 - t0);
+    total_draw_us += (t2 - t1);
+    if (++perf_count == 50) {
+        ESP_LOGI(TAG, "Perf: decode=%lldus draw=%lldus total=%lldus",
+                 total_decode_us/50, total_draw_us/50, (total_decode_us+total_draw_us)/50);
+        total_decode_us = total_draw_us = perf_count = 0;
+    }
 
     buf_index = (buf_index + 1) == EXAMPLE_LCD_BUF_NUM ? 0 : (buf_index + 1);
 }
@@ -100,6 +99,9 @@ esp_err_t app_lcd_init(void)
         .timeout_ms = 50,
     };
 
+    ESP_LOGI(TAG, "LCD Init: Res=%dx%d, BufLen=%u, Px=%d", 
+             EXAMPLE_LCD_H_RES, EXAMPLE_LCD_V_RES, EXAMPLE_LCD_BUF_LEN, EXAMPLE_LCD_BIT_PER_PIXEL);
+
     jpeg_new_decoder_engine(&decode_eng_cfg, &jpgd_handle);
 
     bsp_display_config_t disp_config = {
@@ -109,24 +111,6 @@ esp_err_t app_lcd_init(void)
     bsp_display_new(&disp_config, &display_handle, NULL);
     bsp_display_brightness_init();
     bsp_display_backlight_on();
-
-    if (decode_buffer == NULL) {
-        jpeg_decode_memory_alloc_cfg_t decode_mem_cfg = {
-            .buffer_direction = JPEG_DEC_ALLOC_OUTPUT_BUFFER,
-        };
-        size_t alloc_size = 0;
-        uint8_t *new_buffer = (uint8_t *)jpeg_alloc_decoder_mem(
-            EXAMPLE_LCD_DECODE_BUF_LEN,
-            &decode_mem_cfg,
-            &alloc_size
-        );
-        if (new_buffer == NULL || alloc_size < EXAMPLE_LCD_DECODE_BUF_LEN) {
-            ESP_LOGE(TAG, "Failed to allocate aligned decode buffer");
-            return ESP_ERR_NO_MEM;
-        }
-        decode_buffer = new_buffer;
-        decode_buffer_len = alloc_size;
-    }
 
 #if EXAMPLE_LCD_BUF_NUM == 1
     ESP_ERROR_CHECK(esp_lcd_dpi_panel_get_frame_buffer(display_handle, 1, &lcd_buffer[0]));

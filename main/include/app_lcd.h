@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 #define EXAMPLE_LCD_H_RES                   (1024)
-#define EXAMPLE_LCD_V_RES                   (600)
+#define EXAMPLE_LCD_V_RES                   (608)
 
 #define EXAMPLE_LCD_BUF_NUM                 (CONFIG_EXAMPLE_LCD_BUF_COUNT)
 
@@ -37,10 +37,7 @@ extern "C" {
 #define EXAMPLE_MIPI_DPI_PX_FORMAT          (LCD_COLOR_PIXEL_FORMAT_RGB565)
 #endif
 
-#define EXAMPLE_ALIGN_UP_16(value)          (((value) + 15) & ~15)
-#define EXAMPLE_LCD_DECODE_H_RES            EXAMPLE_ALIGN_UP_16(EXAMPLE_LCD_H_RES)
-#define EXAMPLE_LCD_DECODE_V_RES            EXAMPLE_ALIGN_UP_16(EXAMPLE_LCD_V_RES)
-#define EXAMPLE_LCD_DECODE_BUF_LEN          (EXAMPLE_LCD_DECODE_H_RES * EXAMPLE_LCD_DECODE_V_RES * EXAMPLE_LCD_BIT_PER_PIXEL / 8)
+// LCD 缓冲区大小（RGB565 无需对齐，可直接解码）
 #define EXAMPLE_LCD_BUF_LEN                 (EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * EXAMPLE_LCD_BIT_PER_PIXEL / 8)
 
 /**
