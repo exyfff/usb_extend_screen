@@ -4,6 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * @file app_lcd.c
+ * @brief LCD显示控制和JPEG解码
+ * @details 实现LCD初始化、JPEG图像解码、显示刷新等功能。
+ *          支持双缓冲显示、FPS统计、性能监控等特性。
+ * @author Espressif
+ * @date 2024
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
@@ -31,10 +40,14 @@
 
 static const char *TAG = "app_lcd";
 
+// LCD显示句柄
 static esp_lcd_panel_handle_t display_handle;
+// JPEG解码器句柄
 static jpeg_decoder_handle_t jpgd_handle = NULL;
 
 
+// JPEG解码配置
+// 根据LCD像素格式选择输出格式：RGB565或RGB888
 static jpeg_decode_cfg_t decode_cfg = {
 #ifdef CONFIG_LCD_PIXEL_FORMAT_RGB888
     .output_format = JPEG_DECODE_OUT_FORMAT_RGB888,
@@ -44,13 +57,24 @@ static jpeg_decode_cfg_t decode_cfg = {
     .rgb_order = JPEG_DEC_RGB_ELEMENT_ORDER_BGR,
 };
 
+// 输出缓冲区大小
 static uint32_t out_size = 0;
+// LCD缓冲区数组，支持双缓冲或三缓冲
 static void *lcd_buffer[EXAMPLE_LCD_BUF_NUM];
+// 当前使用的缓冲区索引
 static uint8_t buf_index = 0;
 
+/**
+ * @brief 绘制图像到LCD
+ * @param buf 图像数据缓冲区
+ * @param len 数据长度
+ * @param width 图像宽度
+ * @param height 图像高度
+ * @details 解码JPEG数据并显示到LCD，支持性能统计和FPS计算
+ */
 void app_lcd_draw(uint8_t *buf, uint32_t len, uint16_t width, uint16_t height)
 {
-    // FPS统计：每200帧输出一次
+    /* 性能优化：FPS统计每200帧输出一次，减少串口负载 */
 #if CONFIG_EXAMPLE_ENABLE_PRINT_FPS_RATE_VALUE
     static int fps_count = 0;
     static int64_t start_time = 0;
@@ -63,12 +87,12 @@ void app_lcd_draw(uint8_t *buf, uint32_t len, uint16_t width, uint16_t height)
     }
 #endif
 
-    // 性能计时
+    /* 性能计时：统计解码和显示耗时 */
     static uint32_t perf_count = 0;
     static int64_t total_decode_us = 0, total_draw_us = 0;
     int64_t t0 = esp_timer_get_time();
 
-    // RGB565: 直接解码到 LCD 缓冲区，无需 memcpy
+    /* 性能优化：RGB565格式直接解码到LCD缓冲区，避免额外的memcpy */
     esp_err_t ret = jpeg_decoder_process(jpgd_handle, &decode_cfg, buf, len, 
                                           lcd_buffer[buf_index], EXAMPLE_LCD_BUF_LEN, &out_size);
     int64_t t1 = esp_timer_get_time();
@@ -80,7 +104,7 @@ void app_lcd_draw(uint8_t *buf, uint32_t len, uint16_t width, uint16_t height)
     esp_lcd_panel_draw_bitmap(display_handle, 0, 0, EXAMPLE_LCD_H_RES, EXAMPLE_LCD_V_RES, lcd_buffer[buf_index]);
     int64_t t2 = esp_timer_get_time();
     
-    // 统计并每 50 帧打印
+    /* 性能统计：每50帧输出平均耗时 */
     total_decode_us += (t1 - t0);
     total_draw_us += (t2 - t1);
     if (++perf_count == 50) {
@@ -89,16 +113,24 @@ void app_lcd_draw(uint8_t *buf, uint32_t len, uint16_t width, uint16_t height)
         total_decode_us = total_draw_us = perf_count = 0;
     }
 
+    /* 缓冲区切换：使用双缓冲或三缓冲机制 */
     buf_index = (buf_index + 1) == EXAMPLE_LCD_BUF_NUM ? 0 : (buf_index + 1);
 }
 
+/**
+ * @brief 初始化LCD显示器
+ * @return ESP_OK 成功
+ * @details 初始化JPEG解码引擎、配置LCD参数、获取显示缓冲区
+ */
 esp_err_t app_lcd_init(void)
 {
+    /* JPEG解码引擎配置：设置中断优先级和超时时间 */
     jpeg_decode_engine_cfg_t decode_eng_cfg = {
         .intr_priority = 1,
         .timeout_ms = 50,
     };
 
+    /* 打印LCD配置信息：分辨率、缓冲区长度、像素位数 */
     ESP_LOGI(TAG, "LCD Init: Res=%dx%d, BufLen=%u, Px=%d", 
              EXAMPLE_LCD_H_RES, EXAMPLE_LCD_V_RES, EXAMPLE_LCD_BUF_LEN, EXAMPLE_LCD_BIT_PER_PIXEL);
 

@@ -40,3 +40,4 @@ sdkconfig.old
 *.bin
 *.hex
 *.map
+dependencies.lock
