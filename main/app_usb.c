@@ -67,7 +67,8 @@ esp_err_t app_usb_init(void)
     ESP_RETURN_ON_FALSE(ret == ESP_OK, ESP_FAIL, TAG, "app_uac_init failed");
 #endif
 
-    xTaskCreate(tusb_device_task, "tusb_device_task", 4096, NULL, CONFIG_USB_TASK_PRIORITY, NULL);
+    // USB 任务绑定核心 1，与 transfer_task（核心 0）分离，减少竞争
+    xTaskCreatePinnedToCore(tusb_device_task, "tusb_device_task", 4096, NULL, CONFIG_USB_TASK_PRIORITY, NULL, 1);
     return ret;
 }
 
