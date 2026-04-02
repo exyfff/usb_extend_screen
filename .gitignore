@@ -1,3 +1,42 @@
-build
-windows_driver
-managed_components
+# 构建输出目录
+build/
+
+# Windows 驱动相关目录
+windows_driver/
+
+# 已管理的依赖组件
+managed_components/
+
+# 文档输出目录
+docs/
+
+# codelf 临时文件或相关目录
+.codelf/
+
+# VSCode 编辑器配置目录
+.vscode/
+.windsurf/
+_static/
+.cursor/
+.kiro/
+
+# CMake / Ninja (ESP-IDF 构建生成物)
+compile_commands.json
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+
+# ESP-IDF 配置生成物（通常不建议提交；如你当前已提交则仅影响“未来新增/未跟踪文件”）
+sdkconfig
+sdkconfig.old
+
+# 常见调试/崩溃转储
+*.dmp
+*.log
+
+# 目标产物（如果有意外落到根目录时）
+*.elf
+*.bin
+*.hex
+*.map
