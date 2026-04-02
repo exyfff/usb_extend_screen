@@ -29,6 +29,7 @@
 
 #include "tusb.h"
 #include "bsp/esp-bsp.h"
+#include "uac_config.h"
 
 #define LCD_WIDTH    BSP_LCD_H_RES
 #define LCD_HEIGHT   BSP_LCD_V_RES
@@ -46,8 +47,12 @@ enum {
 #endif
 #if CFG_TUD_AUDIO
     ITF_NUM_AUDIO_CONTROL,
+#if SPEAK_CHANNEL_NUM
     ITF_NUM_AUDIO_STREAMING_SPK,
+#endif
+#if MIC_CHANNEL_NUM
     ITF_NUM_AUDIO_STREAMING_MIC,
+#endif
 #endif
     ITF_NUM_TOTAL,
 };
@@ -59,12 +64,21 @@ enum {
     EPNUM_HID_DATA,
 #endif
 #if CFG_TUD_AUDIO
+#if SPEAK_CHANNEL_NUM
     EPNUM_AUDIO_OUT,
-    EPNUM_AUDIO_IN,
     EPNUM_AUDIO_FB,
+#endif
+#if MIC_CHANNEL_NUM
+    EPNUM_AUDIO_IN,
+#endif
 #endif
     EPNUM_TOTAL
 };
+
+// 占位符：禁用麦克风时 EPNUM_AUDIO_IN 仍需定义（宏参数占位）
+#if CFG_TUD_AUDIO && SPEAK_CHANNEL_NUM && !MIC_CHANNEL_NUM
+#define EPNUM_AUDIO_IN  0
+#endif
 
 #define TUD_HID_REPORT_DESC_TOUCH_SCREEN(report_id, width, height) \
     HID_USAGE_PAGE   ( HID_USAGE_PAGE_DIGITIZER        ),\

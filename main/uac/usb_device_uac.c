@@ -365,15 +365,14 @@ bool tud_audio_rx_done_post_read_cb(uint8_t rhport, uint16_t n_bytes_received, u
     
     rx_count++;
     
-    // 每100次接收打印一次统计信息
-    if (rx_count % 100 == 0) {
-        ESP_LOGI(TAG, "Audio RX: count=%"PRIu32", bytes_received=%d, available=%d", 
-                 rx_count, n_bytes_received, tud_audio_available());
+    // 每5000次接收打印一次统计信息（约10秒@500/s），减少串口负载
+    if (rx_count % 5000 == 0) {
+        ESP_LOGI(TAG, "Audio RX: count=%"PRIu32", bytes=%d", rx_count, n_bytes_received);
     }
     
     // 第一次接收音频数据时打印详细信息
     if (rx_count == 1) {
-        ESP_LOGI(TAG, "First audio RX! bytes_received=%d, spk_active=%d", 
+        ESP_LOGI(TAG, "First audio RX! bytes=%d, spk_active=%d", 
                  n_bytes_received, s_uac_device->spk_active);
     }
 
@@ -408,6 +407,7 @@ bool tud_audio_rx_done_post_read_cb(uint8_t rhport, uint16_t n_bytes_received, u
     return true;
 }
 
+#if CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_RX
 bool tud_audio_tx_done_pre_load_cb(uint8_t rhport, uint8_t itf, uint8_t ep_in, uint8_t cur_alt_setting)
 {
     (void)rhport;
@@ -432,6 +432,7 @@ bool tud_audio_tx_done_pre_load_cb(uint8_t rhport, uint8_t itf, uint8_t ep_in, u
 
     return true;
 }
+#endif
 
 #if CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX
 static void usb_spk_task(void *pvParam)
@@ -506,8 +507,9 @@ esp_err_t uac_device_init(uac_device_config_t *config)
         usb_phy_init();
     }
 
+    BaseType_t ret_val;
 #if CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_RX
-    BaseType_t ret_val = xTaskCreatePinnedToCore(usb_mic_task, "usb_mic_task", 4096, NULL, CONFIG_UAC_MIC_TASK_PRIORITY,
+    ret_val = xTaskCreatePinnedToCore(usb_mic_task, "usb_mic_task", 4096, NULL, CONFIG_UAC_MIC_TASK_PRIORITY,
                                                  &s_uac_device->mic_task_handle, CONFIG_UAC_MIC_TASK_CORE == -1 ? tskNO_AFFINITY : CONFIG_UAC_MIC_TASK_CORE);
     ESP_RETURN_ON_FALSE(ret_val == pdPASS, ESP_FAIL, TAG, "Failed to create usb_mic task");
 #endif
