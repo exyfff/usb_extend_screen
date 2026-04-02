@@ -61,8 +61,9 @@ static void app_touch_task(void *arg)
 #endif
             ESP_LOGD(TAG, "send release %d", touchpad_cnt);
         }
-        // Reading from the GT911 at a time shorter than this may result in false reports.
-        vTaskDelay(20 / portTICK_PERIOD_MS);
+        // 触摸采样间隔：8ms ≈ 125Hz，平衡响应速度和CPU负载
+        // GT911最小稳定间隔约5-8ms
+        vTaskDelay(pdMS_TO_TICKS(8));
     }
 }
 
