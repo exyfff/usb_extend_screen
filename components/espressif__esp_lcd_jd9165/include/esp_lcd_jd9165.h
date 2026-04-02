@@ -106,11 +106,11 @@ esp_err_t esp_lcd_new_panel_jd9165(const esp_lcd_panel_io_handle_t io, const esp
         .num_fbs = 1,                                    \
         .video_timing = {                                \
             .h_size = 1024,                              \
-            .v_size = 600,                               \
+            .v_size = 608,                               \
             .hsync_back_porch = 160,                     \
             .hsync_pulse_width = 40,                     \
             .hsync_front_porch = 160,                    \
-            .vsync_back_porch = 23,                      \
+            .vsync_back_porch = 15,                      \
             .vsync_pulse_width = 10,                      \
             .vsync_front_porch = 12,                     \
         },                                               \
