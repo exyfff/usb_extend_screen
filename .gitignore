@@ -8,7 +8,7 @@ windows_driver/
 managed_components/
 
 # 文档输出目录
-docs/
+docs/开发
 
 # codelf 临时文件或相关目录
 .codelf/

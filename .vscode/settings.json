@@ -17,7 +17,7 @@
         "--query-driver=d:\\esp-idf\\esp-idf_v5.4\\esp-tools\\tools\\riscv32-esp-elf\\esp-14.2.0_20241119\\riscv32-esp-elf\\bin\\riscv32-esp-elf-gcc.exe",
         "--compile-commands-dir=d:\\桌面\\JC1060P470C_I_W\\JC1060P470C_I_W\\1-Demo\\Demo_IDF\\examples\\usb_extend_screen\\build"
     ],
-    "idf.portWin": "COM13",
+    "idf.portWin": "COM7",
     "idf.flashType": "UART",
     "files.associations": {
         "uac_config.h": "c",
